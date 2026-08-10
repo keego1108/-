@@ -44,15 +44,18 @@ type TenantResolution =
 // 「どのユーザーか」はCookieのセッションから安全に取得する。
 // React cache() で同一リクエスト内（layout + page など）の呼び出しを1回にまとめる。
 export const resolveTenant = cache(async function resolveTenant(): Promise<TenantResolution> {
+  // Supabase未設定（環境変数なし）の間は、認証クライアントを作ろうとせずに
+  // 「未ログイン」として扱う（デモモード）。createSupabaseServerClient()は
+  // 環境変数の存在を前提にしているため、先にここでガードする。
+  const admin = getSupabaseClient();
+  if (!admin) return { status: "unauthenticated" };
+
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) return { status: "unauthenticated" };
-
-  const admin = getSupabaseClient();
-  if (!admin) return { status: "unauthenticated" };
 
   const { data: memberships, error: memberError } = await admin
     .from("restaurant_members")
