@@ -1,5 +1,8 @@
 import LogoutButton from "@/components/LogoutButton";
 
+// ログイン状態・契約状況によって内容が変わる画面なので、ビルド時に静的生成しようとしない。
+export const dynamic = "force-dynamic";
+
 export default function BillingGroupLayout({
   children,
 }: {

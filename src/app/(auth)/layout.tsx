@@ -1,3 +1,6 @@
+// onboarding・set-passwordはログイン状態を見るため、ビルド時に静的生成しようとしない。
+export const dynamic = "force-dynamic";
+
 export default function AuthGroupLayout({
   children,
 }: {
