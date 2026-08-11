@@ -51,6 +51,18 @@ export default async function BillingPage({
         <SubscribeButton />
       )}
 
+      <p className="text-[11px] text-[var(--text-muted)] text-center mt-3 leading-relaxed">
+        ご契約手続きにより
+        <Link href="/legal/terms" className="underline underline-offset-2">
+          利用規約
+        </Link>
+        および
+        <Link href="/legal/tokushoho" className="underline underline-offset-2">
+          特定商取引法に基づく表記
+        </Link>
+        の内容に同意したものとみなされます。
+      </p>
+
       <p className="text-[12px] text-[var(--text-muted)] text-center mt-4">
         <Link href="/" className="underline underline-offset-2">
           ホームに戻る

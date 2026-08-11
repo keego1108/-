@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 // onboarding・set-passwordはログイン状態を見るため、ビルド時に静的生成しようとしない。
 export const dynamic = "force-dynamic";
 
@@ -15,6 +17,17 @@ export default function AuthGroupLayout({
         <div className="rounded-[12px] border border-[var(--border)] bg-[var(--surface-2)] p-6">
           {children}
         </div>
+        <nav className="mt-6 flex flex-wrap justify-center gap-x-4 gap-y-2 text-[12px] text-[var(--text-muted)]">
+          <Link href="/legal/tokushoho" className="hover:text-[var(--text-primary)]">
+            特定商取引法に基づく表記
+          </Link>
+          <Link href="/legal/terms" className="hover:text-[var(--text-primary)]">
+            利用規約
+          </Link>
+          <Link href="/legal/privacy" className="hover:text-[var(--text-primary)]">
+            プライバシーポリシー
+          </Link>
+        </nav>
       </div>
     </div>
   );

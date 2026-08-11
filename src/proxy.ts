@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 // ログインなしでアクセスできるページ。
-const PUBLIC_PATHS = ["/login", "/signup", "/auth/callback"];
+const PUBLIC_PATHS = ["/login", "/signup", "/auth/callback", "/legal"];
 // ログイン済みの場合に "/" へ追い返すページ（PUBLIC_PATHSのうち、招待リンクなどセッション確立の
 // 途中経過であるものは除く）。
 const REDIRECT_IF_LOGGED_IN_PATHS = ["/login", "/signup"];
