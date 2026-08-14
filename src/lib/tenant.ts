@@ -57,25 +57,24 @@ export const resolveTenant = cache(async function resolveTenant(): Promise<Tenan
 
   if (!user) return { status: "unauthenticated" };
 
+  // restaurant_members → restaurants を2回の往復に分けず、PostgRESTの
+  // 埋め込みリソース構文で1回のリクエストにまとめる（レイテンシ削減）。
   const { data: memberships, error: memberError } = await admin
     .from("restaurant_members")
-    .select("restaurant_id, role")
+    .select(
+      "role, restaurant:restaurants(id, name, subscription_status, trial_ends_at, stripe_customer_id)"
+    )
     .eq("user_id", user.id)
     .limit(1);
   if (memberError) throw memberError;
 
   const membership = memberships?.[0];
-  if (!membership) {
-    return { status: "no-restaurant", userId: user.id, email: user.email ?? null };
-  }
-
-  const { data: restaurant, error: restaurantError } = await admin
-    .from("restaurants")
-    .select("id, name, subscription_status, trial_ends_at, stripe_customer_id")
-    .eq("id", membership.restaurant_id)
-    .maybeSingle();
-  if (restaurantError) throw restaurantError;
-  if (!restaurant) {
+  // 型生成なしのSupabaseクライアントでは、埋め込みリソースが配列型として
+  // 推論される（実際はrestaurant_id一意のため常に1件）。
+  const restaurant = Array.isArray(membership?.restaurant)
+    ? membership.restaurant[0]
+    : membership?.restaurant;
+  if (!membership || !restaurant) {
     return { status: "no-restaurant", userId: user.id, email: user.email ?? null };
   }
 
