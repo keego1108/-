@@ -62,5 +62,9 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  // PWA用のマニフェスト・アイコン・Service Workerは、ブラウザ/OSがログイン
+  // セッションなしで取得するため、認証チェックの対象から除外する。
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|apple-icon|icons/|sw.js).*)",
+  ],
 };
