@@ -1,6 +1,6 @@
 import { getIngredients } from "@/lib/data";
 import { PageHeader } from "@/components/ui";
-import MenuEditForm from "@/components/MenuEditForm";
+import OcrRecipeFlow from "@/components/OcrRecipeFlow";
 import BackLink from "@/components/BackLink";
 import { requireTenant } from "@/lib/tenant";
 
@@ -15,7 +15,7 @@ export default async function NewMenuPage() {
       </div>
       <PageHeader title="メニューを追加" />
       <div className="px-4 md:px-8">
-        <MenuEditForm menu={null} allIngredients={ingredients} />
+        <OcrRecipeFlow allIngredients={ingredients} />
       </div>
     </div>
   );

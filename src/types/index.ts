@@ -40,3 +40,20 @@ export interface OcrExtractedItem {
   unitLabel: string;
   confidence: "high" | "low";
 }
+
+// レシピ写真からの読み取り結果（1食材ぶん）。
+// matchedIngredientId は、既存の食材マスタと表記ゆれを考慮して照合できた場合のID。
+// 一致するものが無ければnull（保存前にユーザーが手動で選び直す）。
+export interface RecipeOcrItem {
+  rawName: string;
+  matchedIngredientId: string | null;
+  quantity: number;
+  unitLabel: string;
+  confidence: "high" | "low";
+}
+
+export interface RecipeOcrResult {
+  menuName: string;
+  sellPrice: number | null;
+  items: RecipeOcrItem[];
+}
