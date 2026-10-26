@@ -24,5 +24,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false }, { status: 500 });
   }
 
+  // 成功時もログに残し、Vercelのログ画面から「実際に毎日動いているか」を確認できるようにする。
+  console.log(`keepalive ok at ${new Date().toISOString()}`);
   return NextResponse.json({ ok: true });
 }
