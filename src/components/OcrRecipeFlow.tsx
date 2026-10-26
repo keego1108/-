@@ -13,6 +13,7 @@ import {
 import type { Ingredient, RecipeOcrItem } from "@/types";
 import { ingredientCostForUsage } from "@/lib/data";
 import { formatPercent, formatYen } from "@/lib/format";
+import { convertQuantity } from "@/lib/units";
 import { Badge, PrimaryButton, SecondaryButton } from "@/components/ui";
 import MenuEditForm from "@/components/MenuEditForm";
 
@@ -20,6 +21,36 @@ const inputClass =
   "h-9 px-2.5 rounded-[8px] border border-[var(--border)] bg-[var(--surface-2)] text-[13px] text-[var(--text-primary)] outline-none focus:border-[var(--border-strong)]";
 
 type Mode = "choose" | "manual" | "loading" | "result";
+
+// 読み取り結果に、「レシピに書かれていた元の分量・単位」を持たせた編集用の行。
+// 食材を選び直すたびに、元の値から単価表の単位へ換算し直す。
+type DraftItem = RecipeOcrItem & { origQuantity: number; origUnit: string };
+
+// 食材を割り当てて、使用量を単価表の単位（例: kg→g）に換算した行を返す。
+function assignIngredient(
+  item: DraftItem,
+  ingredient: Ingredient | undefined
+): DraftItem {
+  if (!ingredient) {
+    return {
+      ...item,
+      matchedIngredientId: null,
+      quantity: item.origQuantity,
+      unitLabel: item.origUnit,
+    };
+  }
+  const converted = convertQuantity(
+    item.origQuantity,
+    item.origUnit,
+    ingredient.unitLabel
+  );
+  return {
+    ...item,
+    matchedIngredientId: ingredient.id,
+    quantity: converted ?? item.origQuantity,
+    unitLabel: ingredient.unitLabel,
+  };
+}
 
 export default function OcrRecipeFlow({
   allIngredients,
@@ -33,7 +64,7 @@ export default function OcrRecipeFlow({
   const [mode, setMode] = useState<Mode>("choose");
   const [menuName, setMenuName] = useState("");
   const [sellPrice, setSellPrice] = useState(0);
-  const [items, setItems] = useState<RecipeOcrItem[]>([]);
+  const [items, setItems] = useState<DraftItem[]>([]);
   const [demo, setDemo] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -63,7 +94,15 @@ export default function OcrRecipeFlow({
       if (!res.ok) throw new Error(data.error ?? "読み取りに失敗しました");
       setMenuName(data.menuName ?? "");
       setSellPrice(data.sellPrice ?? 0);
-      setItems(data.items ?? []);
+      const loaded: RecipeOcrItem[] = data.items ?? [];
+      setItems(
+        loaded.map((item) =>
+          assignIngredient(
+            { ...item, origQuantity: item.quantity, origUnit: item.unitLabel },
+            allIngredients.find((i) => i.id === item.matchedIngredientId)
+          )
+        )
+      );
       setDemo(Boolean(data.demo));
       setMode("result");
     } catch {
@@ -72,9 +111,22 @@ export default function OcrRecipeFlow({
     }
   }
 
-  function updateItem(index: number, patch: Partial<RecipeOcrItem>) {
+  function updateItem(index: number, patch: Partial<DraftItem>) {
     setItems((prev) =>
       prev.map((item, i) => (i === index ? { ...item, ...patch } : item))
+    );
+  }
+
+  function selectIngredient(index: number, ingredientId: string | null) {
+    setItems((prev) =>
+      prev.map((item, i) =>
+        i === index
+          ? assignIngredient(
+              item,
+              allIngredients.find((ing) => ing.id === ingredientId)
+            )
+          : item
+      )
     );
   }
 
@@ -88,6 +140,8 @@ export default function OcrRecipeFlow({
         quantity: 0,
         unitLabel: allIngredients[0].unitLabel,
         confidence: "high",
+        origQuantity: 0,
+        origUnit: allIngredients[0].unitLabel,
       },
     ]);
   }
@@ -200,6 +254,16 @@ export default function OcrRecipeFlow({
             const lineCost = ingredient
               ? ingredientCostForUsage(ingredient, item.quantity)
               : 0;
+            // 単位が換算できず、分量も手直しされていない行は、原価が不正確になるため警告する。
+            const unitMismatch =
+              ingredient !== undefined &&
+              item.origQuantity > 0 &&
+              item.quantity === item.origQuantity &&
+              convertQuantity(
+                item.origQuantity,
+                item.origUnit,
+                ingredient.unitLabel
+              ) === null;
             return (
               <div
                 key={index}
@@ -219,9 +283,7 @@ export default function OcrRecipeFlow({
                     className={`${inputClass} flex-1`}
                     value={item.matchedIngredientId ?? ""}
                     onChange={(e) =>
-                      updateItem(index, {
-                        matchedIngredientId: e.target.value || null,
-                      })
+                      selectIngredient(index, e.target.value || null)
                     }
                   >
                     <option value="" disabled>
@@ -261,6 +323,15 @@ export default function OcrRecipeFlow({
                   <p className="text-[11px] text-[var(--warning)] mt-1.5 flex items-center gap-1">
                     <IconAlertTriangle size={13} aria-hidden />
                     該当する食材を選んでください。
+                    {item.origQuantity > 0 &&
+                      `（レシピの分量: ${item.origQuantity}${item.origUnit}）`}
+                  </p>
+                )}
+                {unitMismatch && (
+                  <p className="text-[11px] text-[var(--warning)] mt-1.5 flex items-center gap-1">
+                    <IconAlertTriangle size={13} aria-hidden />
+                    レシピの単位（{item.origUnit}）を単価表の単位（
+                    {ingredient?.unitLabel}）に換算できません。分量を確認してください。
                   </p>
                 )}
               </div>
