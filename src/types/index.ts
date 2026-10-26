@@ -39,6 +39,8 @@ export interface OcrExtractedItem {
   unitPrice: number;
   unitLabel: string;
   confidence: "high" | "low";
+  // 既存の食材マスタと照合できた場合のID。あれば新規追加ではなく単価の更新として扱う。
+  matchedIngredientId?: string | null;
 }
 
 // レシピ写真からの読み取り結果（1食材ぶん）。
@@ -49,6 +51,9 @@ export interface RecipeOcrItem {
   matchedIngredientId: string | null;
   quantity: number;
   unitLabel: string;
+  // レシピ表に単価の列があれば、その単価（unitLabelあたり）。読めない・無い場合はnull。
+  // 単価表に未登録の食材を新規登録するときだけ使う仮の値で、既存食材の単価は書き換えない。
+  unitPrice: number | null;
   confidence: "high" | "low";
 }
 

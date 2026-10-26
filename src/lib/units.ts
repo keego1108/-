@@ -39,6 +39,32 @@ function parseUnit(raw: string): UnitInfo {
   return { dimension: `other:${unit}`, factor: 1 };
 }
 
+// 「100g」「1kg」「1L」のような、数量つきの単位表記を数量と単位に分ける。数量が無ければ1。
+export function splitAmountUnit(raw: string): { amount: number; unit: string } {
+  const text = raw.normalize("NFKC").trim();
+  const match = text.match(/^([\d.,]+)\s*(.*)$/);
+  if (!match || !match[2]) return { amount: 1, unit: text };
+  const amount = Number(match[1].replace(/,/g, ""));
+  return { amount: amount > 0 ? amount : 1, unit: match[2] };
+}
+
+// 納品書の単価（例: 「1kgで1,400円」）を、単価表の食材の基準（例: 100gあたり）に直す。
+// 換算できない組み合わせ（例: 「個」と「g」）はnullを返す。
+export function convertUnitPrice(
+  unitPrice: number,
+  priceUnitText: string,
+  ingredient: { unitQuantity: number; unitLabel: string }
+): number | null {
+  const { amount, unit } = splitAmountUnit(priceUnitText);
+  const basisInPriceUnit = convertQuantity(
+    ingredient.unitQuantity,
+    ingredient.unitLabel,
+    unit
+  );
+  if (basisInPriceUnit === null) return null;
+  return Math.round(((unitPrice * basisInPriceUnit) / amount) * 100) / 100;
+}
+
 // 使用量を別の単位に換算する。換算できない組み合わせ（例: 「個」と「g」）はnullを返す。
 export function convertQuantity(
   quantity: number,

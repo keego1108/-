@@ -23,6 +23,12 @@ const RecipeOcrSchema = z.object({
         ),
       quantity: z.number().describe("使用量（数値のみ）"),
       unitLabel: z.string().describe("単位。例: g, kg, 個, L, 本"),
+      unitPrice: z
+        .number()
+        .nullable()
+        .describe(
+          "レシピ表に単価の列があれば、その数値（その行の単位1あたりの金額）。列が無い・空欄・「####」など読めない場合はnull。推測して数値を作ってはいけない"
+        ),
       confidence: z
         .enum(["high", "low"])
         .describe("読み取り・食材マッチングの確信度。不鮮明・判断に迷う場合はlow"),
@@ -53,6 +59,7 @@ function demoResult(nameToId: Record<string, string>): {
         matchedIngredientId: nameToId["豚バラ肉"] ?? null,
         quantity: 120,
         unitLabel: "g",
+        unitPrice: 1.57,
         confidence: "high",
       },
       {
@@ -60,6 +67,7 @@ function demoResult(nameToId: Record<string, string>): {
         matchedIngredientId: nameToId["キャベツ"] ?? null,
         quantity: 80,
         unitLabel: "g",
+        unitPrice: 0.4,
         confidence: "high",
       },
       {
@@ -67,6 +75,7 @@ function demoResult(nameToId: Record<string, string>): {
         matchedIngredientId: null,
         quantity: 10,
         unitLabel: "g",
+        unitPrice: null,
         confidence: "low",
       },
     ],
@@ -138,6 +147,8 @@ export async function POST(request: NextRequest) {
 金額・分量は数値のみ（円記号やカンマ、単位の文字は含めない）。
 単位は表記ゆれをそろえてください（「k」「ｋ」「キロ」→ kg、「ｇ」→ g、「l」「リットル」→ L、「ml」「cc」→ ml）。
 写真に手書きのメモや、レシピ本体と関係ない数字が混ざっていても、レシピ表の中の食材・分量だけを読み取ってください。
+分量が個数と思われるのに単位が空欄や「0」など不明な場合は、単位を「個」にしてください。
+同じ食材が複数行に出てくる場合も、写真のとおり1行ずつ返してください。
 
 この店舗の食材マスタ一覧です。表記ゆれ（送り仮名・ひらがな/カタカナ・部位表記など）を考慮して該当するものがあれば matchedIngredientId にそのIDを入れてください。該当が無ければnullにしてください。一覧に無いIDを作ってはいけません。
 ${ingredientList || "（登録済みの食材はまだありません）"}`,
